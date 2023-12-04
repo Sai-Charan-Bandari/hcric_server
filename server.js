@@ -39,7 +39,6 @@ io.on('connection', async (socket) => {
 
     socket.on('play_req', k => {
         socket.broadcast.emit('play_req', { name: k, id: socket.id })
-        // io.emit('hello','hello')
     })
 
     socket.on('play_ack', k => {
@@ -55,14 +54,12 @@ io.on('connection', async (socket) => {
             console.log('roomList = ', roomList)
             socket.to(k.senderId).emit('play_ack', k.name)
         }
-        // io.emit('hello','hello')
     })
 
     socket.on('toss', k => {
         if (socket.id in pairList)
             socket.to(pairList[socket.id]).emit('toss', k)
         else io.to(socket.id).emit('opponent_disconnected')
-        // io.emit('hello','hello')
     })
 
     socket.on('toss_value', async k => {
@@ -72,11 +69,10 @@ io.on('connection', async (socket) => {
         // console.log('received by ',k.id,' : ',socket.id)
         if (Object.keys(roomList[n].tossObj).length == 2) {
             console.log('filled')
-            io.emit('toss_results', roomList[n].tossObj)
+            io.to(socket.id).to(pairList[socket.id]).emit('toss_results', roomList[n].tossObj)
 
             const a = await io.fetchSockets()
             console.log('fetched sockets are ', a.map((s) => s.id))
-            // io.emit('hello','hello')
 
             // resetting tossObj
             roomList[n].tossObj = {}
@@ -85,29 +81,26 @@ io.on('connection', async (socket) => {
 
     socket.on('action', k => {
         socket.to(pairList[socket.id]).emit('action', k)
-        // io.emit('hello','hello')
     })
 
     socket.on('bat', k => {
         let n = findRoomName(socket.id)
         roomList[n].deliveryObj.bat = k
         if (roomList[n].deliveryObj.bat != -1 && roomList[n].deliveryObj.bowl != -1) {
-            io.emit('delivery_result', roomList[n].deliveryObj)
+            io.to(socket.id).to(pairList[socket.id]).emit('delivery_result', roomList[n].deliveryObj)
             // resetting delivery obj
             roomList[n].deliveryObj = { bat: -1, bowl: -1 }
         }
-        // io.emit('hello','hello')
     })
     
     socket.on('bowl', k => {
         let n = findRoomName(socket.id)
         roomList[n].deliveryObj.bowl = k
         if (roomList[n].deliveryObj.bat != -1 && roomList[n].deliveryObj.bowl != -1) {
-            io.emit('delivery_result', roomList[n].deliveryObj)
+            io.to(socket.id).to(pairList[socket.id]).emit('delivery_result', roomList[n].deliveryObj)
             // resetting delivery obj
             roomList[n].deliveryObj = { bat: -1, bowl: -1 }
         }
-        // io.emit('hello','hello')
     })
     
 //     socket.on('game_over', s => {
@@ -163,7 +156,19 @@ io.on('connection', async (socket) => {
 })
 
 app.get('/', (req, res) => {
-    res.send('<h1>hcric server</h1>')
+    res.send(`
+    <div>
+    <h1>hcric server</h1>
+    <div>
+    <h3>pairList</h3>
+    ${JSON.stringify(pairList)}
+    </div>
+    <div>
+    <h3>roomList</h3>
+    ${JSON.stringify(roomList)}
+    </div>
+    </div>
+    `)
     // res.sendFile(__dirname + '/index.html');
 });
 
